@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LearnChain · On-Chain Research</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --bg: #050507;
+  --surface: #0a0a0f;
+  --surface2: #0f0f18;
+  --surface3: #14141f;
+  --border: rgba(255,255,255,0.05);
+  --border2: rgba(255,255,255,0.1);
+  --text: #e8eaf5;
+  --muted: #5a5870;
+  --dim: #252435;
+  --up: #3dffc0;
+  --up-bg: rgba(61,255,192,0.07);
+  --up-border: rgba(61,255,192,0.2);
+  --down: #ff4f8b;
+  --down-bg: rgba(255,79,139,0.07);
+  --down-border: rgba(255,79,139,0.2);
+  --warn: #f59e0b;
+  --warn-bg: rgba(245,158,11,0.07);
+  --warn-border: rgba(245,158,11,0.25);
+  --lc-blue: #a8d4ff;
+  --lc-purple: #c084fc;
+  --font: 'Rajdhani', sans-serif;
+  --mono: 'Share Tech Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+body::before {
+  content: ''; position: fixed; top: -150px; left: 50%; transform: translateX(-50%);
+  width: 900px; height: 500px;
+  background: radial-gradient(ellipse, rgba(100,80,255,0.06) 0%, transparent 65%);
+  pointer-events: none; z-index: 0;
+}
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background-image: linear-gradient(rgba(168,212,255,0.012) 1px, transparent 1px), linear-gradient(90deg, rgba(168,212,255,0.012) 1px, transparent 1px);
+  background-size: 48px 48px; pointer-events: none; z-index: 0;
+}
+
+.wrapper { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 28px 32px 60px; }
+
+/* Header */
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+.brand { display: flex; flex-direction: column; line-height: 1; letter-spacing: 0.14em; }
+.brand-learn { font-size: 28px; font-weight: 700; color: var(--lc-blue); text-shadow: 0 0 18px rgba(168,212,255,0.5); text-transform: uppercase; }
+.brand-chain { font-size: 28px; font-weight: 700; background: linear-gradient(90deg, #a8d4ff, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-transform: uppercase; }
+.brand-sub { font-size: 10px; font-weight: 600; letter-spacing: 0.25em; color: var(--muted); text-transform: uppercase; margin-top: 4px; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.last-update { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.refresh-btn {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--font); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--lc-blue); background: rgba(168,212,255,0.05); border: 1px solid rgba(168,212,255,0.14);
+  border-radius: 6px; padding: 7px 16px; cursor: pointer; transition: all 0.2s;
+}
+.refresh-btn:hover { background: rgba(168,212,255,0.1); border-color: rgba(168,212,255,0.3); }
+.refresh-btn.loading .icon { animation: spin 0.8s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; margin-bottom: 0; border-bottom: 1px solid var(--border); }
+.tab {
+  font-family: var(--font); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); background: none; border: none; padding: 10px 20px;
+  cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--lc-blue); border-bottom-color: var(--lc-blue); }
+
+/* Sections */
+.section { display: none; padding-top: 24px; }
+.section.active { display: block; }
+
+/* Info box */
+.info-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--lc-blue);
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.info-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.info-text { flex: 1; }
+.info-title { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--lc-blue); margin-bottom: 4px; }
+.info-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.info-desc strong { color: var(--text); font-weight: 600; }
+
+/* Alert */
+.alert-banner {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--down-bg); border: 1px solid var(--down-border);
+  border-radius: 10px; padding: 12px 16px; margin-bottom: 12px;
+  animation: rowIn 0.4s ease;
+}
+.alert-icon { font-size: 20px; flex-shrink: 0; }
+.alert-body { flex: 1; }
+.alert-title { font-size: 13px; font-weight: 700; color: var(--down); margin-bottom: 2px; }
+.alert-desc  { font-size: 12px; color: var(--text); opacity: 0.8; }
+.alert-time  { font-family: var(--mono); font-size: 10px; color: var(--muted); white-space: nowrap; }
+
+/* Stats */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 16px; position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168,212,255,0.2), transparent);
+}
+.stat-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 6px; text-align: center; }
+.stat-value { font-size: 22px; font-weight: 700; text-align: center; color: var(--text); }
+.stat-value.up   { color: var(--up); }
+.stat-value.down { color: var(--down); }
+.stat-value.warn { color: var(--warn); }
+
+/* Section title */
+.section-title { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.section-title h2 { font-size: 13px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text); }
+.live-badge {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.15em;
+  color: var(--up); background: var(--up-bg); border: 1px solid var(--up-border);
+  border-radius: 4px; padding: 2px 8px;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* Table */
+.data-table { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.table-header {
+  display: grid; padding: 12px 20px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--muted); border-bottom: 1px solid var(--border); background: var(--surface2);
+}
+.table-row {
+  display: grid; padding: 13px 20px;
+  border-bottom: 1px solid var(--border); align-items: center;
+  transition: background 0.2s; animation: rowIn 0.4s ease both;
+}
+.table-row:last-child { border-bottom: none; }
+.table-row:hover { background: var(--surface2); }
+@keyframes rowIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: translateX(0); } }
+
+/* Grid templates */
+.unlock-grid { grid-template-columns: 200px 90px 130px 120px 100px 1fr; gap: 12px; }
+.tvl-grid    { grid-template-columns: 220px 130px 100px 100px 110px 1fr; gap: 12px; }
+.stable-grid { grid-template-columns: 180px 80px 140px 110px 70px 1fr; gap: 12px; }
+.fees-grid   { grid-template-columns: 220px 130px 130px 110px 1fr; gap: 12px; }
+
+/* Protocol cell */
+.protocol-name { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.protocol-logo {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--surface3); border: 1px solid var(--border2);
+  overflow: hidden; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--lc-blue);
+}
+.protocol-logo img { width: 100%; height: 100%; object-fit: cover; }
+.p-name { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.p-chain { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+/* Cells */
+.cell-mono { font-family: var(--mono); font-size: 13px; color: var(--text); }
+.cell-muted { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+/* Badges */
+.impact-badge { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 10px; border-radius: 4px; width: fit-content; }
+.impact-high { color: var(--down); background: var(--down-bg); border: 1px solid var(--down-border); }
+.impact-med  { color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn-border); }
+.impact-low  { color: var(--muted); background: var(--surface3); border: 1px solid var(--border); }
+
+.change-pill { font-family: var(--mono); font-size: 12px; padding: 3px 9px; border-radius: 5px; width: fit-content; display: inline-block; }
+.change-pill.up   { color: var(--up);   background: var(--up-bg);   border: 1px solid var(--up-border); }
+.change-pill.down { color: var(--down); background: var(--down-bg); border: 1px solid var(--down-border); }
+.change-pill.neutral { color: var(--muted); background: var(--surface3); border: 1px solid var(--border); }
+
+/* Progress */
+.progress-wrap { display: flex; align-items: center; gap: 8px; }
+.progress-bar { height: 5px; border-radius: 3px; background: var(--surface3); overflow: hidden; flex: 1; }
+.progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--lc-blue), var(--lc-purple)); }
+.progress-fill.danger { background: linear-gradient(90deg, var(--warn), var(--down)); }
+
+/* Skeleton */
+.sk { height: 12px; border-radius: 3px; background: linear-gradient(90deg, var(--surface2) 25%, var(--surface3) 50%, var(--surface2) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+.empty-state { text-align: center; padding: 40px 20px; font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.8; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .wrapper { padding: 20px 16px 40px; }
+}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <div class="brand">
+        <span class="brand-learn">LEARN</span>
+        <span class="brand-chain">CHAIN</span>
+      </div>
+      <div class="brand-sub">On-Chain Research Dashboard</div>
+    </div>
+    <div class="header-right">
+      <div class="last-update" id="last-update">Cargando...</div>
+      <button class="refresh-btn" id="refresh-btn" onclick="loadAll()">
+        <span class="icon">↻</span> Actualizar
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('unlocks', this)">🔓 Token Unlocks</button>
+    <button class="tab" onclick="switchTab('tvl', this)">📊 TVL Protocols</button>
+    <button class="tab" onclick="switchTab('stables', this)">💵 Stablecoins</button>
+    <button class="tab" onclick="switchTab('fees', this)">💰 Fees & Revenue</button>
+  </div>
+
+  <!-- ── TOKEN UNLOCKS ── -->
+  <div class="section active" id="tab-unlocks">
+    <div class="info-box">
+      <div class="info-icon">🔓</div>
+      <div class="info-text">
+        <div class="info-title">¿Qué son los Token Unlocks?</div>
+        <div class="info-desc">
+          Un <strong>token unlock</strong> ocurre cuando tokens que estaban bloqueados (vesting) se liberan al mercado. Esto puede generar <strong>presión bajista</strong> si los beneficiarios (equipo, inversores, early backers) deciden vender. Un unlock de más del <strong>10% del float circulante</strong> se considera de alto impacto y debe monitorearse de cerca. No todos los unlocks son negativos: si la demanda supera la oferta nueva, el precio puede sostenerse o subir.
+        </div>
+      </div>
+    </div>
+
+    <div id="unlock-alerts"></div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Unlocks próx. 30 días</div><div class="stat-value warn" id="stat-unlock-count">—</div></div>
+      <div class="stat-card"><div class="stat-label">Alto impacto (&gt;10%)</div><div class="stat-value down" id="stat-unlock-high">—</div></div>
+      <div class="stat-card"><div class="stat-label">Próximo en días</div><div class="stat-value" id="stat-unlock-next">—</div></div>
+      <div class="stat-card"><div class="stat-label">Más cercano</div><div class="stat-value" id="stat-unlock-top" style="font-size:16px">—</div></div>
+    </div>
+
+    <div class="section-title"><h2>Próximos desbloqueos</h2><span class="live-badge">LIVE</span></div>
+    <div class="data-table">
+      <div class="table-header unlock-grid">
+        <div>Protocolo</div><div>Token</div><div>Fecha unlock</div><div>Cantidad</div><div>Impacto</div><div>% del float</div>
+      </div>
+      <div id="unlock-rows">
+        <div class="table-row unlock-grid"><div><div class="sk" style="width:150px;margin:4px 0"></div></div><div><div class="sk" style="width:50px"></div></div><div><div class="sk" style="width:90px"></div></div><div><div class="sk" style="width:80px"></div></div><div><div class="sk" style="width:55px"></div></div><div><div class="sk"></div></div></div>
+        <div class="table-row unlock-grid"><div><div class="sk" style="width:130px;margin:4px 0"></div></div><div><div class="sk" style="width:50px"></div></div><div><div class="sk" style="width:90px"></div></div><div><div class="sk" style="width:80px"></div></div><div><div class="sk" style="width:55px"></div></div><div><div class="sk"></div></div></div>
+        <div class="table-row unlock-grid"><div><div class="sk" style="width:160px;margin:4px 0"></div></div><div><div class="sk" style="width:50px"></div></div><div><div class="sk" style="width:90px"></div></div><div><div class="sk" style="width:80px"></div></div><div><div class="sk" style="width:55px"></div></div><div><div class="sk"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TVL PROTOCOLS ── -->
+  <div class="section" id="tab-tvl">
+    <div class="info-box">
+      <div class="info-icon">📊</div>
+      <div class="info-text">
+        <div class="info-title">¿Qué es el TVL (Total Value Locked)?</div>
+        <div class="info-desc">
+          El <strong>TVL</strong> mide el total de activos depositados en los smart contracts de un protocolo DeFi. Es el indicador principal de <strong>adopción y confianza</strong> del mercado en un protocolo. Un TVL en aumento indica que más usuarios están confiando su capital al protocolo. Una caída brusca puede señalar salida de liquidez, hackeo, o pérdida de confianza. Comparar el TVL con la capitalización de mercado del token da el ratio <strong>Mcap/TVL</strong>: menor a 1 puede indicar subvaloración.
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">TVL Total DeFi</div><div class="stat-value" id="stat-tvl-total">—</div></div>
+      <div class="stat-card"><div class="stat-label">Cambio 24h (avg)</div><div class="stat-value" id="stat-tvl-24h">—</div></div>
+      <div class="stat-card"><div class="stat-label">Cambio 7d (avg)</div><div class="stat-value" id="stat-tvl-7d">—</div></div>
+      <div class="stat-card"><div class="stat-label">Protocolos activos</div><div class="stat-value" id="stat-tvl-protocols">—</div></div>
+    </div>
+
+    <div class="section-title"><h2>Top Protocolos por TVL</h2><span class="live-badge">LIVE</span></div>
+    <div class="data-table">
+      <div class="table-header tvl-grid">
+        <div>Protocolo</div><div>TVL</div><div>24h %</div><div>7d %</div><div>Cadena</div><div>Categoría</div>
+      </div>
+      <div id="tvl-rows">
+        <div class="table-row tvl-grid"><div><div class="sk" style="width:160px;margin:4px 0"></div></div><div><div class="sk" style="width:80px"></div></div><div><div class="sk" style="width:60px"></div></div><div><div class="sk" style="width:60px"></div></div><div><div class="sk" style="width:70px"></div></div><div><div class="sk" style="width:90px"></div></div></div>
+        <div class="table-row tvl-grid"><div><div class="sk" style="width:140px;margin:4px 0"></div></div><div><div class="sk" style="width:80px"></div></div><div><div class="sk" style="width:60px"></div></div><div><div class="sk" style="width:60px"></div></div><div><div class="sk" style="width:70px"></div></div><div><div class="sk" style="width:90px"></div></div></div>
+        <div class="table-row tvl-grid"><div><div class="sk" style="width:170px;margin:4px 0"></div></div><div><div class="sk" style="width:80px"></div></div><div><div class="sk" style="width:60px"></div></div><div><div class="sk" style="width:60px"></div></div><div><div class="sk" style="width:70px"></div></div><div><div class="sk" style="width:90px"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STABLECOINS ── -->
+  <div class="section" id="tab-stables">
+    <div class="info-box">
+      <div class="info-icon">💵</div>
+      <div class="info-text">
+        <div class="info-title">¿Por qué monitorear Stablecoins on-chain?</div>
+        <div class="info-desc">
+          El <strong>supply de stablecoins</strong> es un indicador clave de liquidez disponible en el mercado. Cuando el supply aumenta, hay más capital listo para entrar al mercado (<strong>señal alcista</strong>). Cuando decrece, los inversores están saliendo a fiat (<strong>señal bajista</strong>). La <strong>dominancia de USDT vs USDC</strong> refleja preferencias de riesgo: USDC es más regulado y transparente. Un cambio brusco en el supply de cualquier stable puede anticipar movimientos grandes de mercado.
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Market Cap Total</div><div class="stat-value" id="stat-stable-total">—</div></div>
+      <div class="stat-card"><div class="stat-label">Cambio 24h</div><div class="stat-value" id="stat-stable-24h">—</div></div>
+      <div class="stat-card"><div class="stat-label">Dominancia USDT</div><div class="stat-value" id="stat-stable-usdt">—</div></div>
+      <div class="stat-card"><div class="stat-label">Dominancia USDC</div><div class="stat-value" id="stat-stable-usdc">—</div></div>
+    </div>
+
+    <div class="section-title"><h2>Stablecoins por Market Cap</h2><span class="live-badge">LIVE</span></div>
+    <div class="data-table">
+      <div class="table-header stable-grid">
+        <div>Nombre</div><div>Símbolo</div><div>Market Cap</div><div>Cambio 24h</div><div>Cadenas</div><div>Mecanismo</div>
+      </div>
+      <div id="stable-rows">
+        <div class="table-row stable-grid"><div><div class="sk" style="width:120px;margin:4px 0"></div></div><div><div class="sk" style="width:50px"></div></div><div><div class="sk" style="width:90px"></div></div><div><div class="sk" style="width:70px"></div></div><div><div class="sk" style="width:30px"></div></div><div><div class="sk" style="width:100px"></div></div></div>
+        <div class="table-row stable-grid"><div><div class="sk" style="width:100px;margin:4px 0"></div></div><div><div class="sk" style="width:50px"></div></div><div><div class="sk" style="width:90px"></div></div><div><div class="sk" style="width:70px"></div></div><div><div class="sk" style="width:30px"></div></div><div><div class="sk" style="width:100px"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FEES & REVENUE ── -->
+  <div class="section" id="tab-fees">
+    <div class="info-box">
+      <div class="info-icon">💰</div>
+      <div class="info-text">
+        <div class="info-title">¿Qué miden los Fees & Revenue on-chain?</div>
+        <div class="info-desc">
+          Los <strong>fees</strong> son lo que los usuarios pagan por usar un protocolo (swaps, préstamos, etc.). El <strong>revenue</strong> es la parte que queda para el protocolo/treasury después de pagar a los liquidity providers. Un protocolo con fees altos y crecientes indica <strong>demanda real y adopción genuina</strong>. El ratio Revenue/Fees muestra qué tan eficiente es el protocolo para capturar valor. Protocolos con revenue alto sin emisión excesiva de tokens son fundamentalmente más sólidos.
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Fees totales 24h</div><div class="stat-value up" id="stat-fees-24h">—</div></div>
+      <div class="stat-card"><div class="stat-label">Revenue 24h</div><div class="stat-value up" id="stat-rev-24h">—</div></div>
+      <div class="stat-card"><div class="stat-label">Fees totales 7d</div><div class="stat-value" id="stat-fees-7d">—</div></div>
+      <div class="stat-card"><div class="stat-label">Top protocolo</div><div class="stat-value" id="stat-fees-top" style="font-size:15px">—</div></div>
+    </div>
+
+    <div class="section-title"><h2>Fees & Revenue por Protocolo</h2><span class="live-badge">LIVE</span></div>
+    <div class="data-table">
+      <div class="table-header fees-grid">
+        <div>Protocolo</div><div>Fees 24h</div><div>Revenue 24h</div><div>Fees 7d</div><div>Categoría</div>
+      </div>
+      <div id="fees-rows">
+        <div class="table-row fees-grid"><div><div class="sk" style="width:160px;margin:4px 0"></div></div><div><div class="sk" style="width:80px"></div></div><div><div class="sk" style="width:80px"></div></div><div><div class="sk" style="width:80px"></div></div><div><div class="sk" style="width:90px"></div></div></div>
+        <div class="table-row fees-grid"><div><div class="sk" style="width:140px;margin:4px 0"></div></div><div><div class="sk" style="width:80px"></div></div><div><div class="sk" style="width:80px"></div></div><div><div class="sk" style="width:80px"></div></div><div><div class="sk" style="width:90px"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function fmt$(n) {
+  if (n == null || isNaN(n)) return '—';
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
+  if (abs >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  if (abs >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+  return '$' + n.toFixed(2);
+}
+
+function fmtPct(n, d=2) {
+  if (n == null || isNaN(n)) return '—';
+  return (n >= 0 ? '+' : '') + n.toFixed(d) + '%';
+}
+
+function fmtDate(ts) {
+  return new Date(ts * 1000).toLocaleDateString('es-CR', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function daysFromNow(ts) {
+  return Math.round((ts * 1000 - Date.now()) / 86400000);
+}
+
+function changePill(val) {
+  if (val == null || isNaN(val)) return '<span class="change-pill neutral">—</span>';
+  const cls = val >= 0 ? 'up' : 'down';
+  return `<span class="change-pill ${cls}">${fmtPct(val)}</span>`;
+}
+
+function setStatChange(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = fmtPct(val);
+  el.className = 'stat-value ' + (val == null ? '' : val >= 0 ? 'up' : 'down');
+}
+
+function logoHtml(logo, name) {
+  const letter = (name || '?').charAt(0).toUpperCase();
+  return logo
+    ? `<img src="${logo}" alt="${name}" onerror="this.parentElement.innerHTML='${letter}'">`
+    : letter;
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── Load All ──────────────────────────────────────────────────────────────────
+async function loadAll() {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('loading');
+  await Promise.allSettled([loadUnlocks(), loadTVL(), loadStables(), loadFees()]);
+  btn.classList.remove('loading');
+  document.getElementById('last-update').textContent =
+    'Actualizado ' + new Date().toLocaleTimeString('es-CR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+// ── TOKEN UNLOCKS — via Netlify Function proxy ───────────────────────────────
+const CG_KEY = 'CG-HjxubDDpJ88jwNh4ZsTdXfwy';
+
+async function loadUnlocks() {
+  try {
+    // Llama a nuestra Netlify Function (sin CORS issues)
+    const res = await fetch('/api/unlocks');
+    if (!res.ok) throw new Error('proxy ' + res.status);
+    const json = await res.json();
+
+    if (json.error) throw new Error(json.error);
+
+    let unlocks = [];
+    const src = json.source;
+    const raw = json.data;
+
+    if (src === 'tokenomist') {
+      const items = raw?.data || raw?.unlocks || raw || [];
+      unlocks = items.map(u => ({
+        name:      u.name || u.project || '—',
+        symbol:    (u.symbol || u.ticker || '').toUpperCase(),
+        timestamp: u.unlockDate
+          ? Math.floor(new Date(u.unlockDate).getTime() / 1000)
+          : (u.timestamp || 0),
+        unlocked:  u.tokens || u.amount || u.unlockAmount || 0,
+        total:     u.totalSupply || u.maxSupply || 0,
+        pct:       u.pct || u.percentage || 0,
+        category:  u.type || u.category || u.label || 'Vesting',
+        usdValue:  u.usdValue || u.value || 0,
+      }));
+    } else if (src === 'token-unlocks') {
+      const items = raw?.data || raw || [];
+      unlocks = items.map(u => ({
+        name:      u.name || '—',
+        symbol:    (u.symbol || '').toUpperCase(),
+        timestamp: u.unlockDate
+          ? Math.floor(new Date(u.unlockDate).getTime() / 1000)
+          : 0,
+        unlocked:  u.tokens || u.amount || 0,
+        total:     u.totalSupply || 0,
+        pct:       u.percentage || u.pct || 0,
+        category:  u.type || u.category || 'Vesting',
+        usdValue:  u.usdValue || 0,
+      }));
+    } else if (src === 'binance') {
+      const items = raw?.data?.list || raw?.data || [];
+      unlocks = items.map(u => ({
+        name:      u.tokenName || u.name || '—',
+        symbol:    (u.tokenSymbol || u.symbol || '').toUpperCase(),
+        timestamp: u.unlockTime
+          ? Math.floor(u.unlockTime / 1000)
+          : (u.unlockDate ? Math.floor(new Date(u.unlockDate).getTime() / 1000) : 0),
+        unlocked:  parseFloat(u.unlockAmount || u.tokens || 0),
+        total:     parseFloat(u.totalSupply || 0),
+        pct:       parseFloat(u.percentage || u.pct || 0),
+        category:  u.vestingType || u.type || u.category || 'Vesting',
+        usdValue:  parseFloat(u.unlockValue || u.usdValue || 0),
+      }));
+    }
+
+    // Filter valid & sort by date
+    unlocks = unlocks
+      .filter(u => u.timestamp > 0 && u.timestamp > Date.now()/1000)
+      .sort((a, b) => a.timestamp - b.timestamp)
+      .slice(0, 20);
+
+    if (!unlocks.length) throw new Error('No upcoming unlocks in data');
+
+    renderUnlocks(unlocks);
+
+  } catch (err) {
+    console.warn('Proxy failed, using curated fallback:', err.message);
+    loadUnlocksFallback();
+  }
+}
+
+// Fallback curado con precios live de CoinGecko
+const KNOWN_UNLOCKS = [
+  { name:'Arbitrum',     symbol:'ARB',  id:'arbitrum',               days:3,  pct:1.5,  tokens:92400000,   total:10000000000, category:'Team & Advisors' },
+  { name:'Optimism',     symbol:'OP',   id:'optimism',               days:5,  pct:0.9,  tokens:24158630,   total:4294967296,  category:'Core Contributors' },
+  { name:'Worldcoin',    symbol:'WLD',  id:'worldcoin-wld',          days:10, pct:8.5,  tokens:101750000,  total:10000000000, category:'Inversores' },
+  { name:'Celestia',     symbol:'TIA',  id:'celestia',               days:14, pct:12.0, tokens:178771372,  total:1000000000,  category:'Early Backers' },
+  { name:'Starknet',     symbol:'STRK', id:'starknet',               days:18, pct:6.4,  tokens:64000000,   total:10000000000, category:'Inversores' },
+  { name:'Jupiter',      symbol:'JUP',  id:'jupiter-exchange-solana',days:20, pct:4.2,  tokens:250000000,  total:10000000000, category:'Team' },
+  { name:'Pyth Network', symbol:'PYTH', id:'pyth-network',           days:22, pct:5.1,  tokens:2500000000, total:10000000000, category:'Ecosystem' },
+  { name:'Aptos',        symbol:'APT',  id:'aptos',                  days:25, pct:0.7,  tokens:4535630,    total:1000000000,  category:'Inversores' },
+  { name:'Sui',          symbol:'SUI',  id:'sui',                    days:28, pct:1.1,  tokens:64102564,   total:10000000000, category:'Early Contributors' },
+  { name:'Sei Network',  symbol:'SEI',  id:'sei-network',            days:30, pct:3.2,  tokens:150000000,  total:6000000000,  category:'Team & Ecosystem' },
+];
+
+async function loadUnlocksFallback() {
+  try {
+    const now  = Math.floor(Date.now() / 1000);
+    const ids  = KNOWN_UNLOCKS.map(u => u.id).join(',');
+    const pRes = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&x_cg_demo_api_key=${CG_KEY}`
+    );
+    const prices = pRes.ok ? await pRes.json() : {};
+
+    const unlocks = KNOWN_UNLOCKS.map(u => ({
+      name:      u.name,
+      symbol:    u.symbol,
+      timestamp: now + u.days * 86400,
+      unlocked:  u.tokens,
+      total:     u.total,
+      pct:       u.pct,
+      category:  u.category,
+      usdValue:  (prices[u.id]?.usd || 0) * u.tokens,
+    }));
+
+    renderUnlocks(unlocks);
+  } catch {
+    const now = Math.floor(Date.now() / 1000);
+    renderUnlocks(KNOWN_UNLOCKS.map(u => ({
+      ...u, timestamp: now + u.days * 86400, usdValue: 0,
+      unlocked: u.tokens,
+    })));
+  }
+}
+
+function renderUnlocks(unlocks) {
+  const rows    = document.getElementById('unlock-rows');
+  const alertEl = document.getElementById('unlock-alerts');
+
+  if (!unlocks || !unlocks.length) {
+    rows.innerHTML = '<div class="empty-state">No se encontraron unlocks próximos.</div>';
+    return;
+  }
+
+  // Stats
+  const highImpact = unlocks.filter(u => u.pct > 10);
+  const next       = unlocks[0];
+  const days0      = Math.round((next.timestamp * 1000 - Date.now()) / 86400000);
+
+  document.getElementById('stat-unlock-count').textContent = unlocks.length;
+  document.getElementById('stat-unlock-high').textContent  = highImpact.length;
+  document.getElementById('stat-unlock-next').textContent  = days0 <= 0 ? 'Hoy' : days0 + 'd';
+  document.getElementById('stat-unlock-top').textContent   = next.name;
+
+  // Alert banners for high impact
+  alertEl.innerHTML = '';
+  highImpact.slice(0, 3).forEach(u => {
+    const d = Math.round((u.timestamp * 1000 - Date.now()) / 86400000);
+    const qty = u.unlocked >= 1e9 ? (u.unlocked/1e9).toFixed(2)+'B'
+              : u.unlocked >= 1e6 ? (u.unlocked/1e6).toFixed(1)+'M'
+              : (u.unlocked/1e3).toFixed(0)+'K';
+    const usd = u.usdValue > 0 ? ' · ' + fmt$(u.usdValue) : '';
+    alertEl.innerHTML += `
+      <div class="alert-banner">
+        <div class="alert-icon">🚨</div>
+        <div class="alert-body">
+          <div class="alert-title">ALTO IMPACTO: ${u.name} — ${u.pct.toFixed(1)}% del float desbloqueado</div>
+          <div class="alert-desc">${u.category} · ${qty} tokens${usd} · Posible presión bajista</div>
+        </div>
+        <div class="alert-time">${d <= 0 ? '⚡ Hoy' : 'en ' + d + 'd'}</div>
+      </div>`;
+  });
+
+  // Table rows
+  rows.innerHTML = '';
+  unlocks.forEach((u, i) => {
+    const pct    = u.pct || (u.total ? (u.unlocked / u.total) * 100 : 0);
+    const impact = pct > 15 ? 'high' : pct > 5 ? 'med' : 'low';
+    const label  = pct > 15 ? 'Alto' : pct > 5 ? 'Medio' : 'Bajo';
+    const days   = Math.round((u.timestamp * 1000 - Date.now()) / 86400000);
+    const color  = days <= 3 ? 'var(--down)' : days <= 7 ? 'var(--warn)' : 'var(--text)';
+    const dLabel = days <= 0 ? '⚡ Hoy' : days === 1 ? 'Mañana' : 'en ' + days + 'd';
+    const qty    = u.unlocked >= 1e9 ? (u.unlocked/1e9).toFixed(2)+'B'
+                 : u.unlocked >= 1e6 ? (u.unlocked/1e6).toFixed(1)+'M'
+                 : u.unlocked >= 1e3 ? (u.unlocked/1e3).toFixed(0)+'K'
+                 : u.unlocked.toFixed(0);
+
+    const row = document.createElement('div');
+    row.className = 'table-row unlock-grid';
+    row.style.animationDelay = (i * 0.05) + 's';
+    row.innerHTML = `
+      <div class="protocol-name">
+        <div class="protocol-logo">${u.name.charAt(0)}</div>
+        <div>
+          <div class="p-name">${u.name}</div>
+          <div class="p-chain">${u.category}</div>
+        </div>
+      </div>
+      <div class="cell-mono">${u.symbol || '—'}</div>
+      <div class="cell-mono" style="color:${color}">
+        ${new Date(u.timestamp * 1000).toLocaleDateString('es-CR',{day:'2-digit',month:'short',year:'numeric'})}
+        <br><span style="font-size:10px;color:var(--muted)">${dLabel}</span>
+      </div>
+      <div class="cell-mono">${qty}</div>
+      <div><span class="impact-badge impact-${impact}">${label}</span></div>
+      <div class="progress-wrap">
+        <div class="progress-bar">
+          <div class="progress-fill ${pct > 15 ? 'danger' : ''}" style="width:${Math.min(pct,100)}%"></div>
+        </div>
+        <span class="cell-muted" style="min-width:42px;text-align:right">${pct.toFixed(1)}%</span>
+      </div>`;
+    rows.appendChild(row);
+  });
+}
+
+// ── TVL ───────────────────────────────────────────────────────────────────────
+async function loadTVL() {
+  try {
+    const res = await fetch('https://api.llama.fi/protocols');
+    if (!res.ok) throw new Error('protocols ' + res.status);
+    const protocols = await res.json();
+    protocols.sort((a, b) => (b.tvl || 0) - (a.tvl || 0));
+
+    const top = protocols.filter(p => p.tvl > 0).slice(0, 100);
+    const totalTvl = top.reduce((s, p) => s + (p.tvl || 0), 0);
+    const valid24 = top.filter(p => p.change_1d != null).slice(0, 30);
+    const valid7d  = top.filter(p => p.change_7d != null).slice(0, 30);
+    const avg24 = valid24.reduce((s, p) => s + p.change_1d, 0) / (valid24.length || 1);
+    const avg7d  = valid7d.reduce((s, p) => s + p.change_7d, 0) / (valid7d.length || 1);
+
+    document.getElementById('stat-tvl-total').textContent = fmt$(totalTvl);
+    setStatChange('stat-tvl-24h', avg24);
+    setStatChange('stat-tvl-7d', avg7d);
+    document.getElementById('stat-tvl-protocols').textContent = protocols.filter(p => p.tvl > 0).length;
+
+    const rows = document.getElementById('tvl-rows');
+    rows.innerHTML = '';
+    top.slice(0, 30).forEach((p, i) => {
+      const row = document.createElement('div');
+      row.className = 'table-row tvl-grid';
+      row.style.animationDelay = (i * 0.03) + 's';
+      const chains = (p.chains || []).slice(0, 2).join(', ') || '—';
+      row.innerHTML = `
+        <div class="protocol-name">
+          <div class="protocol-logo">${logoHtml(p.logo, p.name)}</div>
+          <div><div class="p-name">${p.name}</div><div class="p-chain">${chains}</div></div>
+        </div>
+        <div class="cell-mono">${fmt$(p.tvl)}</div>
+        <div>${changePill(p.change_1d)}</div>
+        <div>${changePill(p.change_7d)}</div>
+        <div class="cell-muted">${(p.chains || ['—'])[0]}</div>
+        <div class="cell-muted" style="font-size:11px">${p.category || '—'}</div>`;
+      rows.appendChild(row);
+    });
+  } catch (err) {
+    console.error('TVL error:', err);
+    document.getElementById('tvl-rows').innerHTML = '<div class="empty-state">⚠️ Error cargando TVL. Intentá actualizar.</div>';
+  }
+}
+
+// ── STABLECOINS ───────────────────────────────────────────────────────────────
+async function loadStables() {
+  try {
+    const res = await fetch('https://stablecoins.llama.fi/stablecoins?includePrices=true');
+    if (!res.ok) throw new Error('stables ' + res.status);
+    const data = await res.json();
+    const stables = (data.peggedAssets || []).sort((a, b) =>
+      (b.circulating?.peggedUSD || 0) - (a.circulating?.peggedUSD || 0)
+    );
+
+    const totalMcap = stables.reduce((s, x) => s + (x.circulating?.peggedUSD || 0), 0);
+    const usdt = stables.find(s => s.symbol === 'USDT');
+    const usdc = stables.find(s => s.symbol === 'USDC');
+    const usdtPct = usdt ? ((usdt.circulating?.peggedUSD || 0) / totalMcap * 100) : 0;
+    const usdcPct = usdc ? ((usdc.circulating?.peggedUSD || 0) / totalMcap * 100) : 0;
+
+    document.getElementById('stat-stable-total').textContent = fmt$(totalMcap);
+    document.getElementById('stat-stable-usdt').textContent = usdtPct.toFixed(1) + '%';
+    document.getElementById('stat-stable-usdc').textContent = usdcPct.toFixed(1) + '%';
+
+    // 24h change from top stables
+    const changes = stables.slice(0, 5).map(s => {
+      const now = s.circulating?.peggedUSD || 0;
+      const prev = s.circulatingPrevDay?.peggedUSD || now;
+      return prev ? ((now - prev) / prev * 100) : 0;
+    });
+    const avg24 = changes.reduce((a, b) => a + b, 0) / (changes.length || 1);
+    setStatChange('stat-stable-24h', avg24);
+
+    const rows = document.getElementById('stable-rows');
+    rows.innerHTML = '';
+    stables.slice(0, 20).forEach((s, i) => {
+      const mcap = s.circulating?.peggedUSD || 0;
+      const prev = s.circulatingPrevDay?.peggedUSD || mcap;
+      const ch24 = prev ? ((mcap - prev) / prev * 100) : 0;
+      const chainCount = Object.keys(s.chainCirculating || {}).length;
+      const mechanism = s.pegMechanism || s.pegType || '—';
+
+      const row = document.createElement('div');
+      row.className = 'table-row stable-grid';
+      row.style.animationDelay = (i * 0.03) + 's';
+      row.innerHTML = `
+        <div class="p-name">${s.name}</div>
+        <div class="cell-mono">${s.symbol}</div>
+        <div class="cell-mono">${fmt$(mcap)}</div>
+        <div>${changePill(ch24)}</div>
+        <div class="cell-muted">${chainCount}</div>
+        <div class="cell-muted" style="font-size:11px">${mechanism}</div>`;
+      rows.appendChild(row);
+    });
+  } catch (err) {
+    console.error('Stables error:', err);
+    document.getElementById('stable-rows').innerHTML = '<div class="empty-state">⚠️ Error cargando stablecoins.</div>';
+  }
+}
+
+// ── FEES & REVENUE ────────────────────────────────────────────────────────────
+async function loadFees() {
+  try {
+    const [feesRes, revRes] = await Promise.all([
+      fetch('https://api.llama.fi/overview/fees?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true&dataType=dailyFees'),
+      fetch('https://api.llama.fi/overview/fees?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true&dataType=dailyRevenue')
+    ]);
+
+    if (!feesRes.ok) throw new Error('fees ' + feesRes.status);
+    const feesData = await feesRes.json();
+    const protocols = (feesData.protocols || []).filter(p => (p.total24h || 0) > 0).sort((a, b) => (b.total24h || 0) - (a.total24h || 0));
+
+    // Build revenue map
+    let revMap = {};
+    if (revRes.ok) {
+      const revData = await revRes.json();
+      (revData.protocols || []).forEach(p => { revMap[p.name] = p.total24h || 0; });
+      const totalRev = Object.values(revMap).reduce((a, b) => a + b, 0);
+      document.getElementById('stat-rev-24h').textContent = fmt$(totalRev);
+    }
+
+    const total24h = protocols.reduce((s, p) => s + (p.total24h || 0), 0);
+    const total7d  = protocols.reduce((s, p) => s + (p.total7d  || 0), 0);
+    document.getElementById('stat-fees-24h').textContent = fmt$(total24h);
+    document.getElementById('stat-fees-7d').textContent  = fmt$(total7d);
+    document.getElementById('stat-fees-top').textContent = protocols[0]?.name || '—';
+
+    const rows = document.getElementById('fees-rows');
+    rows.innerHTML = '';
+    protocols.slice(0, 30).forEach((p, i) => {
+      const rev = revMap[p.name];
+      const row = document.createElement('div');
+      row.className = 'table-row fees-grid';
+      row.style.animationDelay = (i * 0.03) + 's';
+      row.innerHTML = `
+        <div class="protocol-name">
+          <div class="protocol-logo">${logoHtml(p.logo, p.name)}</div>
+          <div><div class="p-name">${p.name}</div><div class="p-chain">${(p.chains||[]).slice(0,2).join(', ')}</div></div>
+        </div>
+        <div class="cell-mono" style="color:var(--up)">${fmt$(p.total24h)}</div>
+        <div class="cell-mono">${rev != null ? fmt$(rev) : '<span class="cell-muted">—</span>'}</div>
+        <div class="cell-mono">${fmt$(p.total7d)}</div>
+        <div class="cell-muted" style="font-size:11px">${p.category || '—'}</div>`;
+      rows.appendChild(row);
+    });
+  } catch (err) {
+    console.error('Fees error:', err);
+    document.getElementById('fees-rows').innerHTML = '<div class="empty-state">⚠️ Error cargando fees y revenue.</div>';
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+loadAll();
+setInterval(loadAll, 120000);
+</script>
+</body>
+</html>
